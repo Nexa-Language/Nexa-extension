@@ -1,0 +1,25 @@
+{
+  "name": "nexa-lang",
+  "displayName": "Nexa",
+  "description": "Nexa Language Support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "nexa",
+      "aliases": ["Nexa", "nexa"],
+      "extensions": [".nexa"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "nexa",
+      "scopeName": "source.nexa",
+      "path": "./syntaxes/nexa.tmLanguage.json"
+    }]
+  }
+}

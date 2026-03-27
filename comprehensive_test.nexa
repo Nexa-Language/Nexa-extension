@@ -1,0 +1,526 @@
+// 这是 Nexa 的综合测试文件，用于测试语法高亮
+
+/*
+ 多行注释测试
+*/
+
+include "stdlib.nexa";
+
+agent FriendlyBot {
+    role: "Casual conversationalist",
+    model: "minimax/minimax-m2.5",
+    prompt: """
+    You are a very friendly ChatBot for casual conversations.
+    This is a multi-line string.
+    """
+}
+
+tool SearchGlobal {
+    description: "Search tool",
+    parameters: {
+        "query": "string"
+    }
+}
+
+tool MCPTool {
+    mcp: "github.com/repo/mcp-server"
+}
+
+tool PythonTool {
+    python: "def execute(): pass"
+}
+
+flow main_flow() {
+    print("Hello, Nexa!");
+    
+    // 测试控制流
+    if (true) {
+        assert true;
+    } else {
+        assert false;
+    }
+
+    loop {
+        try {
+            print("trying...");
+        } catch (e) {
+            print(e);
+        }
+    } until (false);
+}
+
+flow dag_flow() {
+    // 管道
+    result = input >> Agent1 >> Agent2;
+
+    // 分叉
+    results = input |>> [Agent1, Agent2, Agent3];
+
+    // Fire-and-Forget
+    input || [Agent1, Agent2];
+
+    // 合流
+    result = [Agent1, Agent2] &>> MergerAgent;
+
+    // 共识合流
+    result = [Agent1, Agent2] && ConsensusAgent;
+
+    // 条件分支
+    result = input ?? TrueAgent : FalseAgent;
+}
+
+flow number_test() {
+    val1 = 42;
+    val2 = 3.14;
+}
+
+// 确保所有的关键字都用高亮表示
+flow all_keywords_test() {
+    print("Testing");
+}
+
+// ============================================
+// 新增：遗漏的语法特性测试
+// ============================================
+
+// join 函数 - 多 Agent 结果合并
+flow join_test() {
+    final_report = join(Researcher_Tech, Researcher_Biz).Summarizer("Synthesize");
+}
+
+// img 函数 - 图像处理
+flow img_test() {
+    img_data = img("docs/img/logo.jpg");
+    result = VisionAgent.run("Inspect this image", img_data);
+}
+
+// secret 函数 - 密钥获取
+flow secret_test() {
+    my_key = secret("MY_TEST_KEY");
+    print(my_key);
+}
+
+// fallback 表达式 - 容错处理
+flow fallback_test() {
+    result = Agent.run("test") fallback "Fallback Triggered";
+}
+
+// Agent 返回类型声明
+agent TypedAgent -> str {
+    prompt: "Returns a string"
+}
+
+agent GenericAgent -> Result<Data> {
+    prompt: "Returns generic type"
+}
+
+// Agent uses 多种形式
+agent McpAgent uses mcp:"http://fake.url" {
+    model: "dummy_model"
+}
+
+agent StdAgent uses std.shell {
+    prompt: "Uses std shell"
+}
+
+agent MultiToolAgent uses Tool1, Tool2, Tool3 {
+    prompt: "Uses multiple tools"
+}
+
+// description 属性
+agent DescribedAgent {
+    description: "This is a described agent",
+    model: "gpt-4"
+}
+
+// ============================================
+// 更多遗漏特性测试
+// ============================================
+
+// Agent uses 字符串字面量 (技能文件)
+agent SkillBot uses "examples/SKILLS.md" {
+    model: "minimax/minimax-m2.5",
+    stream: "true",
+    memory: "persistent"
+}
+
+// Agent uses 多个 std 模块
+agent MultiStdAgent uses std.time, std.http, std.fs {
+    prompt: "Uses multiple std modules"
+}
+
+// clone 方法 - 运行时动态反射
+flow clone_test() {
+    SuperAgent = BaseAgent.clone(new_name="SuperAgent", model="gpt-4");
+    result = SuperAgent.run("Hello from clone!");
+}
+
+// 字典访问语法
+flow dict_access_test() {
+    config = secret("CONFIG");
+    value = config["subkey"];
+    nested = secret("DATA")["level1"]["level2"];
+}
+
+// 二元运算符 (+ 字符串拼接)
+flow binary_op_test() {
+    greeting = "Hello" + " " + "World";
+    combined = prefix + suffix;
+}
+
+// ============================================
+// 标准库完整测试
+// ============================================
+
+// std.fs - 文件系统
+agent FileAssistant uses std.fs {
+    role: "文件管理助手",
+    prompt: "管理文件"
+}
+
+// std.http - HTTP 请求
+agent WebScraper uses std.http {
+    role: "网页抓取助手",
+    prompt: "抓取网页"
+}
+
+// std.time - 时间系统
+agent TimeBot uses std.time {
+    role: "时间助手",
+    prompt: "处理时间"
+}
+
+// std.shell - 系统终端
+agent ShellBot uses std.shell {
+    role: "终端助手",
+    prompt: "执行命令"
+}
+
+// std.ask_human - 人机交互
+agent HumanBot uses std.ask_human {
+    role: "人机交互",
+    prompt: "与人类交互"
+}
+
+// std.json - JSON 处理
+agent JsonBot uses std.json {
+    role: "JSON助手",
+    prompt: "处理JSON"
+}
+
+// std.math - 数学运算
+agent MathBot uses std.math {
+    role: "数学助手",
+    prompt: "数学计算"
+}
+
+// 多标准库组合
+agent SuperBot uses std.fs, std.http, std.time, std.shell {
+    role: "超级助手",
+    prompt: "全能助手"
+}
+
+// ============================================
+// Protocol 类型系统测试
+// ============================================
+
+protocol ComplexType {
+    name: "string",
+    age: "int",
+    score: "float",
+    active: "boolean",
+    tags: "list[string]",
+    numbers: "list[int]",
+    metadata: "dict"
+}
+
+// Agent 实现协议
+agent TypedReviewer implements ComplexType {
+    prompt: "Review with structured output"
+}
+
+// ============================================
+// 返回类型箭头语法测试
+// ============================================
+
+agent StringAgent -> str {
+    prompt: "Returns string"
+}
+
+agent IntAgent -> int {
+    prompt: "Returns int"
+}
+
+agent GenericAgent -> Result<Data> {
+    prompt: "Returns generic"
+}
+
+// ============================================
+// 算术运算符测试
+// ============================================
+
+flow arithmetic_test() {
+    a = 10 + 5;
+    b = 10 - 5;
+    c = 10 * 5;
+    d = 10 / 5;
+}
+
+// ============================================
+// mcp: 前缀工具引用测试
+// ============================================
+
+agent MCPToolUser uses mcp:"http://mcp-server.example.com" {
+    prompt: "Uses MCP tool"
+}
+
+// ============================================
+// 属性访问链测试
+// ============================================
+
+flow property_chain_test() {
+    value = result.score;
+    nested = obj.prop1.prop2.prop3;
+}
+
+// ============================================
+// 默认参数值测试 (kwarg)
+// ============================================
+
+flow kwarg_test() {
+    result = Agent.run("input", timeout=30, stream=true);
+    cloned = BaseAgent.clone(new_name="Clone", model="gpt-4");
+}
+
+// ============================================
+// 列表字面量测试
+// ============================================
+
+flow list_literal_test() {
+    names = ["Alice", "Bob", "Charlie"];
+    numbers = [1, 2, 3, 4, 5];
+    mixed = [Agent1, Agent2, Agent3];
+}
+
+// ============================================
+// 默认匹配 _ 测试
+// ============================================
+
+flow default_match_test() {
+    match input {
+        intent("greeting") => GreetBot.run(input),
+        intent("question") => QABot.run(input),
+        _ => DefaultBot.run(input)
+    }
+}
+
+// ============================================
+// mcp: 前缀测试
+// ============================================
+
+agent MCPAgent1 uses mcp:"http://server1.com" {
+    prompt: "MCP agent 1"
+}
+
+agent MCPAgent2 uses Tool1, mcp:"http://server2.com", Tool2 {
+    prompt: "Mixed tools"
+}
+
+// ============================================
+// 属性访问链测试
+// ============================================
+
+flow property_access_test() {
+    obj = result.data;
+    deep = response.body.content.text;
+    item = items[0].name;
+}
+
+// ============================================
+// 变量赋值测试
+// ============================================
+
+flow assignment_test() {
+    simple = "value";
+    chained = a = b = "chain";
+    result = Agent.run("test");
+}
+
+// ============================================
+// 复杂嵌套场景测试
+// ============================================
+
+flow complex_nested_test() {
+    // 嵌套 try-catch
+    try {
+        loop {
+            if (condition) {
+                try {
+                    result = Agent.run("inner");
+                } catch (inner_err) {
+                    print(inner_err);
+                }
+            }
+        } until ("done");
+    } catch (outer_err) {
+        print(outer_err);
+    }
+}
+
+// ============================================
+// 完整 DAG 链测试
+// ============================================
+
+flow full_dag_test() {
+    // 完整的分叉-合流-分支链
+    result = input
+        |>> [Researcher, Analyst]
+        &>> Reviewer
+        >> Editor
+        ?? Publisher : Reviser;
+}
+
+// ============================================
+// secrets 命名空间测试
+// ============================================
+
+agent SecretAgent uses "secrets.nxs" {
+    prompt: "Uses secrets",
+    cache: "true",
+    max_history_turns: "2",
+    experience: "examples/my_memory.md"
+}
+
+flow secrets_test() {
+    my_key = secrets.default.API_KEY;
+    db_url = secrets.production.DATABASE_URL;
+    nested = secrets.env.subkey.value;
+}
+
+// ============================================
+// 字符串形式的布尔值测试
+// ============================================
+
+agent StringBoolAgent {
+    stream: "true",
+    cache: "false",
+    memory: "persistent"
+}
+
+// ============================================
+// runtime.meta 内置变量测试
+// ============================================
+
+flow runtime_meta_test() {
+    loop {
+        draft = Writer.run("task");
+        feedback = Reviewer.run(draft);
+    } until ("Code has 0 bugs" or runtime.meta.loop_count >= 4)
+
+    if (runtime.meta.loop_count >= 4) {
+        print("Max iterations reached");
+        print(runtime.meta.last_result);
+    }
+}
+
+// ============================================
+// raise 异常抛出测试
+// ============================================
+
+flow raise_test() {
+    if (error_condition) {
+        raise SuspendExecution("Need Human Check");
+    }
+}
+
+// ============================================
+// 逻辑运算符测试
+// ============================================
+
+flow logical_op_test() {
+    if (a or b) {
+        print("or");
+    }
+    if (a and b) {
+        print("and");
+    }
+    if (not a) {
+        print("not");
+    }
+}
+
+// ============================================
+// 带参数的 flow 测试
+// ============================================
+
+flow param_flow(task: string, count: int) {
+    result = Agent.run(task);
+    print(count);
+}
+
+flow multi_param_flow(a: string, b: int, c: bool) {
+    print(a);
+    print(b);
+    print(c);
+}
+
+protocol ResponseFormat {
+    status: "success | error",
+    data: "any",
+    message: "string"
+}
+
+agent SmartBot {
+    role: "Assistant",
+    prompt: "You are a smart bot.",
+    model: "openai/gpt-4",
+    memory: "persistent",
+    stream: true,
+    cache: true,
+    experience: "mem.md",
+    fallback: ["backup"],
+    max_tokens: 1000,
+    timeout: 30
+}
+
+test "Test SmartBot" {
+    result = SmartBot.run("Hello");
+    assert "Is a greeting" against result;
+}
+
+flow semantic_if_test() {
+    semantic_if "是一句日期提示" fast_match r"\d{4}-\d{2}" against req {
+        print("Date");
+    } else {
+        print("Other");
+    }
+
+    semantic_if (req, "判断条件") {
+        "case1" => print("Action 1"),
+        "case2" => print("Action 2")
+    }
+}
+
+flow match_test() {
+    match input {
+        intent("查询天气") => handleWeather(),
+        intent("设置提醒") => handleReminder(),
+        _ => handleDefault()
+    }
+}
+
+@limit(max_tokens=2000)
+@timeout(seconds=60)
+@retry(max_attempts=3)
+@temperature(value=0.8)
+agent DecoratedBot uses Tool1 implements Protocol1 {
+    prompt: "I have decorators."
+}
+
+flow stdlib_test() {
+    result1 = DecoratedBot.run("Hi");
+    result2 = DecoratedBot.run_async("Hello");
+
+    std.log("Test log");
+    std.http.get("https://example.com");
+}

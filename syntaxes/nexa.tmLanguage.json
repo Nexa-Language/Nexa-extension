@@ -1,0 +1,308 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Nexa",
+  "scopeName": "source.nexa",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#declarations"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#keywords"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.nexa",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.nexa",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(agent)\\s+([a-zA-Z_][a-zA-Z0-9_]*)(\\s*->\\s*([a-zA-Z_][a-zA-Z0-9_]*(?:<[a-zA-Z_][a-zA-Z0-9_]*>)?)?)?",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.agent.nexa"
+            },
+            "2": {
+              "name": "entity.name.type.agent.nexa"
+            },
+            "3": {
+              "name": "keyword.operator.arrow.return-type.nexa"
+            },
+            "4": {
+              "name": "entity.name.type.return.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b(tool|flow|protocol)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.$1.nexa"
+            },
+            "2": {
+              "name": "entity.name.type.$1.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b(test)\\s+(\"[^\"]+\")",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.test.nexa"
+            },
+            "2": {
+              "name": "string.quoted.double.test-name.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b(role|prompt|model|memory|stream|cache|experience|fallback|tools|mcp|python|description|parameters|max_tokens|timeout|max_history_turns)\\s*:",
+          "captures": {
+            "1": {
+              "name": "variable.parameter.attribute.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b(flow)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.flow.nexa"
+            },
+            "2": {
+              "name": "entity.name.function.flow.nexa"
+            }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.triple.nexa",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.nexa",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.double.nexa",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.nexa",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.regexp.nexa",
+          "begin": "r\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.nexa",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.operator.dag.nexa",
+          "match": ">>|\\|>>|\\|\\||&>>|&&|\\?\\?"
+        },
+        {
+          "name": "keyword.operator.logical.nexa",
+          "match": "==|!=|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.assignment.nexa",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.arithmetic.nexa",
+          "match": "\\+|\\-|\\*|\\/"
+        },
+        {
+          "name": "keyword.operator.return-type.nexa",
+          "match": "->"
+        },
+        {
+          "name": "keyword.operator.arrow.nexa",
+          "match": "=>"
+        },
+        {
+          "match": "(@)(limit|timeout|retry|temperature)\\b",
+          "captures": {
+            "1": {
+              "name": "punctuation.decorator.nexa"
+            },
+            "2": {
+              "name": "entity.name.function.decorator.nexa"
+            }
+          }
+        },
+        {
+          "name": "keyword.control.nexa",
+          "match": "\\b(if|else|loop|until|try|catch|match|intent|semantic_if)\\b"
+        },
+        {
+          "name": "keyword.other.nexa",
+          "match": "\\b(include|against|fast_match|assert|print|uses|implements|fallback|raise|or|and|not)\\b"
+        },
+        {
+          "match": "\\b(runtime)(\\.)(meta)(\\.)(loop_count|last_result)\\b",
+          "captures": {
+            "1": {
+              "name": "support.class.runtime.nexa"
+            },
+            "2": {
+              "name": "punctuation.accessor.nexa"
+            },
+            "3": {
+              "name": "support.module.runtime.nexa"
+            },
+            "4": {
+              "name": "punctuation.accessor.nexa"
+            },
+            "5": {
+              "name": "variable.other.builtin.nexa"
+            }
+          }
+        },
+        {
+          "name": "support.function.builtin.nexa",
+          "match": "\\b(join|img|secret)\\b"
+        },
+        {
+          "name": "constant.numeric.nexa",
+          "match": "\\b\\d+(\\.\\d+)?\\b"
+        },
+        {
+          "name": "punctuation.bracket.nexa",
+          "match": "[{\\[\\(\\)}\\]]"
+        },
+        {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\.(run|run_async|clone)\\b",
+          "captures": {
+            "1": {
+              "name": "entity.name.class.nexa"
+            },
+            "2": {
+              "name": "support.function.agent-method.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b(std)\\.(fs|http|time|shell|ask_human|json|math)(?:\\.([a-zA-Z_][a-zA-Z0-9_]*))?\\b",
+          "captures": {
+            "1": {
+              "name": "support.class.stdlib.nexa"
+            },
+            "2": {
+              "name": "support.module.stdlib.nexa"
+            },
+            "3": {
+              "name": "support.function.stdlib.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b(secrets)(?:\\.([a-zA-Z_][a-zA-Z0-9_]*))*(?:\\.([a-zA-Z_][a-zA-Z0-9_]*))?\\b",
+          "captures": {
+            "1": {
+              "name": "support.class.secrets.nexa"
+            },
+            "2": {
+              "name": "variable.other.namespace.nexa"
+            },
+            "3": {
+              "name": "variable.other.constant.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*:",
+          "captures": {
+            "1": {
+              "name": "variable.parameter.protocol.nexa"
+            }
+          }
+        },
+        {
+          "name": "constant.language.boolean.nexa",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "variable.language.default.nexa",
+          "match": "\\b_\\b"
+        },
+        {
+          "match": "\\b(mcp):",
+          "captures": {
+            "1": {
+              "name": "support.function.mcp.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)(\\.)([a-zA-Z_][a-zA-Z0-9_]*)(?=\\s*[^(])",
+          "captures": {
+            "1": {
+              "name": "variable.other.object.nexa"
+            },
+            "2": {
+              "name": "punctuation.accessor.nexa"
+            },
+            "3": {
+              "name": "variable.other.property.nexa"
+            }
+          }
+        },
+        {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(=)(?!=)",
+          "captures": {
+            "1": {
+              "name": "variable.other.assignment.nexa"
+            },
+            "2": {
+              "name": "keyword.operator.assignment.nexa"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
