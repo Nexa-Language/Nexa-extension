@@ -1,25 +1,147 @@
 {
   "name": "nexa-lang",
   "displayName": "Nexa",
-  "description": "Nexa Language Support",
-  "version": "0.0.1",
+  "description": "Nexa Language Support — syntax highlighting, build & run commands",
+  "version": "0.1.0",
+  "publisher": "Nexa-Language",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nexa-Language/Nexa"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets"
   ],
+  "activationEvents": [
+    "onLanguage:nexa",
+    "onCommand:nexa.build",
+    "onCommand:nexa.run",
+    "onCommand:nexa.harnessCheck",
+    "onCommand:nexa.validate"
+  ],
+  "main": "./extension.js",
   "contributes": {
-    "languages": [{
-      "id": "nexa",
-      "aliases": ["Nexa", "nexa"],
-      "extensions": [".nexa"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "nexa",
-      "scopeName": "source.nexa",
-      "path": "./syntaxes/nexa.tmLanguage.json"
-    }]
+    "languages": [
+      {
+        "id": "nexa",
+        "aliases": ["Nexa", "nexa"],
+        "extensions": [".nx", ".nxlib"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "nexa-secrets",
+        "aliases": ["Nexa Secrets", "nexa-secrets"],
+        "extensions": [".nxs"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "nexa",
+        "scopeName": "source.nexa",
+        "path": "./syntaxes/nexa.tmLanguage.json"
+      },
+      {
+        "language": "nexa-secrets",
+        "scopeName": "source.nexa.secrets",
+        "path": "./syntaxes/secrets.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "nexa.build",
+        "title": "Nexa: Build",
+        "icon": "$(build)",
+        "category": "Nexa"
+      },
+      {
+        "command": "nexa.run",
+        "title": "Nexa: Run",
+        "icon": "$(play)",
+        "category": "Nexa"
+      },
+      {
+        "command": "nexa.harnessCheck",
+        "title": "Nexa: Harness Check",
+        "icon": "$(check)",
+        "category": "Nexa"
+      },
+      {
+        "command": "nexa.validate",
+        "title": "Nexa: Validate",
+        "icon": "$(checklist)",
+        "category": "Nexa"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "nexa.run",
+          "group": "navigation",
+          "when": "resourceLangId == nexa"
+        },
+        {
+          "command": "nexa.build",
+          "group": "navigation",
+          "when": "resourceLangId == nexa"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "nexa.build",
+          "group": "nexa",
+          "when": "resourceLangId == nexa"
+        },
+        {
+          "command": "nexa.run",
+          "group": "nexa",
+          "when": "resourceLangId == nexa"
+        },
+        {
+          "command": "nexa.harnessCheck",
+          "group": "nexa",
+          "when": "resourceLangId == nexa"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "nexa.build",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b",
+        "when": "resourceLangId == nexa"
+      },
+      {
+        "command": "nexa.run",
+        "key": "f5",
+        "mac": "f5",
+        "when": "resourceLangId == nexa"
+      }
+    ],
+    "configuration": {
+      "title": "Nexa",
+      "properties": {
+        "nexa.executable": {
+          "type": "string",
+          "default": "nexa",
+          "description": "Path to the nexa CLI executable. If 'nexa' is not in PATH, specify the full path (e.g. /usr/local/bin/nexa or python -m src.cli)."
+        },
+        "nexa.harnessMode": {
+          "type": "string",
+          "enum": ["off", "warn", "strict"],
+          "default": "warn",
+          "description": "Default Harness validation mode for build/run commands."
+        },
+        "nexa.proxyUrl": {
+          "type": "string",
+          "default": "",
+          "description": "HTTPS proxy URL for agents that need network access (e.g. http://127.0.0.1:7897). If empty, HTTP_PROXY/HTTPS_PROXY env vars are used."
+        }
+      }
+    }
   }
 }

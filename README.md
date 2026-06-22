@@ -1,246 +1,102 @@
-# Nexa Language Extension for VS Code
+# Nexa Language Extension for VSCode
 
-A comprehensive Visual Studio Code extension providing syntax highlighting and language support for **Nexa** - a Domain Specific Language (DSL) for building AI Agent orchestration systems.
+[![Version](https://img.shields.io/badge/version-0.1.0-brightgreen.svg)](https://github.com/Nexa-Language/Nexa)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
-## ✨ Features
+Syntax highlighting and one-click build/run commands for the [Nexa](https://github.com/Nexa-Language/Nexa) Agent-Native Programming Language.
 
-- 🎨 **Full Syntax Highlighting** - Complete coverage of Nexa DSL syntax
-- 📝 **Comment Support** - Single-line (`//`) and multi-line (`/* */`) comments
-- 🔗 **Bracket Matching** - Auto-closing and matching for `{}`, `[]`, `()`
-- 📁 **Code Folding** - Support for folding code blocks
-- 🎯 **Standard TextMate Scopes** - Compatible with popular color themes
+## Features
 
-## 📦 Installation
+### Syntax Highlighting
+Full support for Nexa v2.2.1 syntax:
+- **Declarations**: `agent`, `tool`, `flow`, `protocol`, `test`, `type`, `struct`, `enum`, `trait`, `impl`, `fn`, `job`, `server`, `db`, `auth`, `kv`
+- **Harness six-tuple** (v2.0+): `autoloop`, `with_context`, `try_agent`, `catch_correction`, `snapshot`, `restore`, `fork`, `merge`, `verify`, `satisfies`, `reflect`, `unharnessed`, `context_policy`, `context`
+- **Lifecycle hooks**: `before_step`, `after_step`, `on_error`, `before_tool`, `after_tool`
+- **Actor model**: `spawn`, `pass`, `await`, `receive`, `channel`, `parallel`, `race`
+- **Control flow**: `if`, `else`, `for`, `each`, `in`, `while`, `match`, `intent`, `semantic_if`, `loop`, `until`
+- **DAG operators**: `>>`, `|>>`, `||`, `&>>`, `&&`, `??`, `|>`
+- **Error propagation** (v1.2+): `?`, `otherwise`, `defer`
+- **Pattern matching** (v1.3.7+): `let`, destructuring patterns
+- **ADT** (v1.3+): `struct`, `enum`, `trait`, `impl`, `Option`, `Result`
+- **Config** (v2.1+): `use config`, `include`
+- **@tool annotation** (v2.0+): zero-cost tool binding
+- **Secrets** (`.nxs` files): `config` blocks, `BASE_URL`, `API_KEY`
 
-### From VSIX (Manual Install)
+### One-Click Commands
 
-1. Download the `.vsix` file from releases
-2. Open VS Code
-3. Go to Extensions (Ctrl+Shift+X)
-4. Click the "..." menu → "Install from VSIX..."
-5. Select the downloaded file
+| Command | Shortcut | Description |
+|---------|----------|-------------|
+| **Nexa: Build** | `Ctrl+Shift+B` | Compile `.nx` to Python (`nexa build`) |
+| **Nexa: Run** | `F5` | Build and execute (`nexa run`) |
+| **Nexa: Harness Check** | — | Run Harness Validator (`nexa harness-check --harness <mode>`) |
+| **Nexa: Validate** | — | Type-check and lint (`nexa validate`) |
 
-### From Source
+Commands are accessible via:
+- Command Palette (`Ctrl+Shift+P` → "Nexa: ...")
+- Editor title bar buttons (Build ▷, Run ▶)
+- Right-click context menu
+- Keyboard shortcuts
+
+Output is streamed to the **Nexa Output Channel**.
+
+## Installation
+
+### From VSIX
 
 ```bash
-git clone https://github.com/ouyangyipeng/Nexa-extension.git
-cd Nexa-extension
-npm install
-npm run compile
-# Press F5 in VS Code to launch extension development host
+code --install-extension nexa-lang-0.1.0.vsix
 ```
 
-## 🚀 Supported Syntax
-
-### Declarations
-
-```nexa
-// Agent declaration with return type
-agent MyAgent -> str {
-    role: "Assistant",
-    prompt: "You are a helpful assistant.",
-    model: "gpt-4"
-}
-
-// Tool declaration
-tool SearchTool {
-    description: "Search the web",
-    parameters: {
-        "query": "string"
-    }
-}
-
-// Flow declaration with parameters
-flow main(input: string) {
-    result = MyAgent.run(input);
-}
-
-// Protocol declaration
-protocol Response {
-    status: "string",
-    data: "dict"
-}
-```
-
-### DAG Operators
-
-```nexa
-// Pipeline
-result = input >> Agent1 >> Agent2;
-
-// Fan-out (parallel)
-results = input |>> [Agent1, Agent2, Agent3];
-
-// Merge
-result = [Agent1, Agent2] &>> MergerAgent;
-
-// Conditional branch
-result = input ?? TrueAgent : FalseAgent;
-
-// Consensus merge
-result = [Agent1, Agent2] && JudgeAgent;
-```
-
-### Control Flow
-
-```nexa
-// If-else
-if (condition) {
-    print("true");
-} else {
-    print("false");
-}
-
-// Loop with semantic condition
-loop {
-    draft = Writer.run(task);
-    feedback = Reviewer.run(draft);
-} until ("The output is satisfactory");
-
-// Try-catch
-try {
-    result = RiskyAgent.run("task");
-} catch (error) {
-    print(error);
-}
-
-// Match intent
-match input {
-    intent("greeting") => GreetBot.run(input),
-    intent("question") => QABot.run(input),
-    _ => DefaultBot.run(input)
-}
-```
-
-### Semantic Conditions
-
-```nexa
-// Semantic if with fast_match
-semantic_if "contains date" fast_match r"\d{4}-\d{2}-\d{2}" against input {
-    print("Date detected");
-} else {
-    print("No date");
-}
-
-// Simplified semantic_if
-semantic_if (input, "check condition") {
-    "case1" => Action1,
-    "case2" => Action2
-}
-```
-
-### Standard Library
-
-```nexa
-// File system
-agent FileBot uses std.fs {
-    prompt: "Manage files"
-}
-
-// HTTP requests
-agent WebBot uses std.http {
-    prompt: "Fetch web content"
-}
-
-// Shell commands
-agent ShellBot uses std.shell {
-    prompt: "Execute commands"
-}
-
-// Multiple std modules
-agent SuperBot uses std.fs, std.http, std.time {
-    prompt: "Multi-capability bot"
-}
-```
-
-### Decorators
-
-```nexa
-@limit(max_tokens=1000)
-@timeout(30)
-@retry(3)
-agent RateLimitedAgent {
-    prompt: "I have rate limits"
-}
-```
-
-### Built-in Functions
-
-```nexa
-// Join multiple agents
-result = join(Agent1, Agent2).Merger("combine");
-
-// Image processing
-img_data = img("path/to/image.png");
-
-// Secret management
-api_key = secret("API_KEY");
-```
-
-## 📁 Project Structure
-
-```
-nexa-lang/
-├── .vscode/
-│   └── launch.json          # Extension debug config
-├── syntaxes/
-│   └── nexa.tmLanguage.json # TextMate grammar definition
-├── language-configuration.json
-├── package.json
-├── comprehensive_test.nexa  # Test file with all syntax
-└── README.md
-```
-
-## 🎨 Scope Reference
-
-| Scope | Description |
-|-------|-------------|
-| `keyword.declaration.agent.nexa` | `agent` keyword |
-| `keyword.declaration.flow.nexa` | `flow` keyword |
-| `keyword.control.nexa` | Control flow keywords |
-| `keyword.operator.dag.nexa` | DAG operators (`>>`, `|>>`, etc.) |
-| `entity.name.type.agent.nexa` | Agent names |
-| `entity.name.function.nexa` | Function names |
-| `variable.parameter.attribute.nexa` | Agent attributes |
-| `support.function.builtin.nexa` | Built-in functions |
-| `support.class.stdlib.nexa` | Standard library |
-| `string.quoted.double.nexa` | Double-quoted strings |
-| `comment.line.double-slash.nexa` | Line comments |
-
-## 🔧 Development
+Or in VSCode: Extensions panel → ⋯ → "Install from VSIX..." → select `nexa-lang-0.1.0.vsix`.
 
 ### Prerequisites
 
-- Node.js 16+
-- VS Code
-
-### Build
+The extension requires the `nexa` CLI to be installed and on your `PATH`:
 
 ```bash
-npm install
-npm run compile
+pip install nexa-lang
 ```
 
-### Package
+If `nexa` is not on `PATH`, set the full path in VSCode Settings → `nexa.executable`.
 
-```bash
-npx vsce package
+## Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `nexa.executable` | `nexa` | Path to the nexa CLI (use `python -m src.cli` if running from source) |
+| `nexa.harnessMode` | `warn` | Default Harness validation mode: `off`, `warn`, or `strict` |
+| `nexa.proxyUrl` | `""` | HTTPS proxy URL for agents needing network access (e.g. `http://127.0.0.1:7897`) |
+
+## Usage
+
+1. Open a `.nx` file in VSCode
+2. Press `Ctrl+Shift+B` to build, or `F5` to run
+3. View output in the **Nexa Output Channel** (View → Output → select "Nexa")
+
+### Example
+
+```nexa
+agent Researcher uses web_search {
+    model: "deepseek/deepseek-chat",
+    prompt: "Research the topic."
+}
+
+flow main {
+    result = "quantum computing" >> Researcher;
+    print(result);
+}
 ```
 
-## 📄 License
+Press `F5` → extension runs `nexa run main.nx` → output streamed to channel.
 
-MIT License
+## File Types
 
-## 🤝 Contributing
+| Extension | Language ID | Description |
+|-----------|-------------|-------------|
+| `.nx` | `nexa` | Nexa source files |
+| `.nxlib` | `nexa` | Nexa library files |
+| `.nxs` | `nexa-secrets` | Nexa secrets/config files |
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## License
 
-## 📚 Resources
-
-- [Nexa Language Documentation](https://github.com/nexa-lang/nexa)
-- [VS Code Extension API](https://code.visualstudio.com/api)
-- [TextMate Grammar](https://macromates.com/manual/en/language_grammars)
-
----
-
-Made with ❤️ for the Nexa community
+AGPL-3.0 — see [LICENSE](LICENSE).

@@ -72,7 +72,7 @@
           }
         },
         {
-          "match": "\\b(role|prompt|model|memory|stream|cache|experience|fallback|tools|mcp|python|description|parameters|max_tokens|timeout|max_history_turns)\\s*:",
+          "match": "\\b(role|prompt|model|memory|stream|cache|experience|fallback|tools|mcp|python|description|parameters|max_tokens|timeout|max_history_turns|output_format|output_schema|max_tool_calls|tool_call_strategy|retry|temperature|source|sink|input_schema|output_schema|inherit|strategy)\\s*:",
           "captures": {
             "1": {
               "name": "variable.parameter.attribute.nexa"
@@ -168,11 +168,35 @@
         },
         {
           "name": "keyword.control.nexa",
-          "match": "\\b(if|else|loop|until|try|catch|match|intent|semantic_if)\\b"
+          "match": "\\b(if|else|loop|until|try|catch|match|intent|semantic_if|for|each|in|while|break|continue|return)\\b"
+        },
+        {
+          "name": "keyword.declaration.nexa",
+          "match": "\\b(agent|tool|flow|protocol|test|type|struct|enum|trait|impl|fn|job|server|db|auth|kv|concurrent)\\b"
+        },
+        {
+          "name": "keyword.harness.nexa",
+          "match": "\\b(autoloop|with_context|try_agent|catch_correction|step|snapshot|restore|fork|merge|verify|satisfies|reflect|unharnessed|context_policy|context)\\b"
+        },
+        {
+          "name": "keyword.harness.lifecycle.nexa",
+          "match": "\\b(before_step|after_step|on_error|before_tool|after_tool)\\b"
+        },
+        {
+          "name": "keyword.actor.nexa",
+          "match": "\\b(spawn|pass|await|receive|channel|parallel|race|after|schedule|select)\\b"
         },
         {
           "name": "keyword.other.nexa",
-          "match": "\\b(include|against|fast_match|assert|print|uses|implements|fallback|raise|or|and|not)\\b"
+          "match": "\\b(include|against|fast_match|assert|print|uses|implements|fallback|raise|or|and|not|defer|let|template|requires|ensures|otherwise|require_auth|enable_auth|connect|open|perform|on_failure|route|static|cors|semantic|group|serve)\\b"
+        },
+        {
+          "name": "keyword.type.nexa",
+          "match": "\\b(str|int|float|bool|unit|Option|Result|Actor|Some|Ok|Err|true|false)\\b"
+        },
+        {
+          "name": "keyword.config.nexa",
+          "match": "\\b(use|config)\\b"
         },
         {
           "match": "\\b(runtime)(\\.)(meta)(\\.)(loop_count|last_result)\\b",

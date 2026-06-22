@@ -1,0 +1,8 @@
+.vscode/**
+.vscode-test/**
+*.vsix
+test_secrets.nxs
+comprehensive_test.nexa
+plans/**
+**/*.log
+**/.DS_Store
