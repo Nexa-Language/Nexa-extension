@@ -1,48 +1,33 @@
 /**
  * Nexa Language Extension for VSCode
  *
- * Provides:
- *   - Syntax highlighting (via TextMate grammar)
- *   - Build command (nexa build)
- *   - Run command (nexa run / nexa build + python)
- *   - Harness Check (nexa harness-check)
- *   - Validate (nexa validate)
- *
- * Commands are available via:
- *   - Command Palette (Ctrl+Shift+P) -> "Nexa: ..."
- *   - Editor title bar buttons (Build, Run)
- *   - Right-click context menu
- *   - Keyboard shortcuts (Ctrl+Shift+B = Build, F5 = Run)
+ * Provides syntax highlighting + one-click Build/Run/HarnessCheck/Validate commands.
+ * Commands: nexa.build, nexa.run, nexa.harnessCheck, nexa.validate
+ * Shortcuts: Ctrl+Shift+B (build), F5 (run)
  */
 
 const vscode = require('vscode');
-const { exec, spawn } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
-/** @type {vscode.OutputChannel | undefined} */
 let outputChannel;
 
-/**
- * Get the nexa executable command. Honors the `nexa.executable` setting.
- * @returns {string}
- */
-function getNexaExecutable() {
-    const config = vscode.workspace.getConfiguration('nexa');
-    return config.get('executable', 'nexa');
+function getOutputChannel() {
+    if (!outputChannel) {
+        outputChannel = vscode.window.createOutputChannel('Nexa');
+    }
+    return outputChannel;
 }
 
-/**
- * Get the harness mode from settings.
- * @returns {string}
- */
+function getNexaExecutable() {
+    return vscode.workspace.getConfiguration('nexa').get('executable', 'nexa');
+}
+
 function getHarnessMode() {
     return vscode.workspace.getConfiguration('nexa').get('harnessMode', 'warn');
 }
 
-/**
- * Get proxy environment additions for child processes.
- * @returns {Object}
- */
 function getProxyEnv() {
     const config = vscode.workspace.getConfiguration('nexa');
     const proxyUrl = config.get('proxyUrl', '');
@@ -56,39 +41,78 @@ function getProxyEnv() {
     return env;
 }
 
-/**
- * Ensure the output channel exists.
- * @returns {vscode.OutputChannel}
- */
-function getOutputChannel() {
-    if (!outputChannel) {
-        outputChannel = vscode.window.createOutputChannel('Nexa');
-    }
-    return outputChannel;
+function log(msg) {
+    const ch = getOutputChannel();
+    ch.appendLine(msg);
+    ch.show(true);
 }
 
 /**
- * Get the active .nx file path, or prompt the user if none is active.
- * @returns {string | undefined}
+ * Parse the nexa executable setting into (cmd, args[]).
+ * Supports both 'nexa' and 'python -m src.cli' style.
  */
+function parseExecutable(setting) {
+    const parts = setting.split(/\s+/).filter(Boolean);
+    return { cmd: parts[0], prefixArgs: parts.slice(1) };
+}
+
+/**
+ * Run nexa subcommand via execFile (no shell, safe arg passing).
+ * @returns {Promise<number>} exit code
+ */
+function runNexa(subArgs, cwd) {
+    return new Promise((resolve) => {
+        const { cmd, prefixArgs } = parseExecutable(getNexaExecutable());
+        const args = [...prefixArgs, ...subArgs];
+        const env = getProxyEnv();
+
+        log(`\n$ ${cmd} ${args.join(' ')}  (cwd: ${cwd})\n`);
+
+        const child = execFile(cmd, args, {
+            cwd,
+            env,
+            maxBuffer: 10 * 1024 * 1024,
+            shell: process.platform === 'win32',  // shell needed on Windows for PATH lookup
+        });
+
+        if (child.stdout) {
+            child.stdout.on('data', (data) => {
+                getOutputChannel().append(data.toString());
+            });
+        }
+        if (child.stderr) {
+            child.stderr.on('data', (data) => {
+                getOutputChannel().append(data.toString());
+            });
+        }
+        child.on('close', (code) => {
+            log(`\n[exit code: ${code}]\n`);
+            resolve(code || 0);
+        });
+        child.on('error', (err) => {
+            log(`\n[error: ${err.message}]`);
+            if (err.code === 'ENOENT') {
+                log(`Hint: '${cmd}' not found. Set "nexa.executable" in Settings to the full path.`);
+            }
+            resolve(1);
+        });
+    });
+}
+
 function getActiveNexaFile() {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
-        vscode.window.showWarningMessage('No active editor. Open a .nx file first.');
+        vscode.window.showWarningMessage('Nexa: No active editor. Open a .nx file first.');
         return undefined;
     }
     const filePath = editor.document.fileName;
     if (!filePath.endsWith('.nx')) {
-        vscode.window.showWarningMessage(`Active file is not a .nx file: ${filePath}`);
+        vscode.window.showWarningMessage(`Nexa: Active file is not a .nx file: ${filePath}`);
         return undefined;
     }
     return filePath;
 }
 
-/**
- * Save the active file before running a command.
- * @returns {Promise<void>}
- */
 async function saveActiveFile() {
     const editor = vscode.window.activeTextEditor;
     if (editor && editor.document.isDirty) {
@@ -96,110 +120,56 @@ async function saveActiveFile() {
     }
 }
 
-/**
- * Run a shell command and stream output to the Nexa output channel.
- * @param {string} cmd - The command string to execute
- * @param {string} cwd - Working directory
- * @returns {Promise<number>} - Exit code
- */
-function runCommand(cmd, cwd) {
-    return new Promise((resolve) => {
-        const channel = getOutputChannel();
-        channel.show(true);
-        channel.appendLine(`\n$ ${cmd}\n`);
-
-        const env = getProxyEnv();
-        const child = exec(cmd, { cwd, env, maxBuffer: 10 * 1024 * 1024 });
-
-        if (child.stdout) {
-            child.stdout.on('data', (data) => channel.append(data.toString()));
-        }
-        if (child.stderr) {
-            child.stderr.on('data', (data) => channel.append(data.toString()));
-        }
-        child.on('close', (code) => {
-            channel.appendLine(`\n[exit code: ${code}]\n`);
-            resolve(code || 0);
-        });
-        child.on('error', (err) => {
-            channel.appendLine(`\n[error: ${err.message}]\n`);
-            resolve(1);
-        });
-    });
-}
-
-/**
- * Build the current .nx file: `nexa build <file>`
- */
 async function buildCommand() {
+    log('>>> nexa.build command triggered');
     await saveActiveFile();
     const filePath = getActiveNexaFile();
     if (!filePath) return;
-
-    const nexa = getNexaExecutable();
     const cwd = path.dirname(filePath);
-    const cmd = `${nexa} build "${filePath}"`;
-    const code = await runCommand(cmd, cwd);
+    const code = await runNexa(['build', filePath], cwd);
     if (code === 0) {
         vscode.window.showInformationMessage('Nexa: Build succeeded.');
     } else {
-        vscode.window.showErrorMessage(`Nexa: Build failed (exit ${code}).`);
+        vscode.window.showErrorMessage(`Nexa: Build failed (exit ${code}). See Output panel.`);
     }
 }
 
-/**
- * Run the current .nx file: `nexa run <file>`
- */
 async function runCommand() {
+    log('>>> nexa.run command triggered');
     await saveActiveFile();
     const filePath = getActiveNexaFile();
     if (!filePath) return;
-
-    const nexa = getNexaExecutable();
     const cwd = path.dirname(filePath);
-    const cmd = `${nexa} run "${filePath}"`;
-    await runCommand(cmd, cwd);
+    await runNexa(['run', filePath], cwd);
 }
 
-/**
- * Harness check the current .nx file: `nexa harness-check <file>`
- */
 async function harnessCheckCommand() {
+    log('>>> nexa.harnessCheck command triggered');
     await saveActiveFile();
     const filePath = getActiveNexaFile();
     if (!filePath) return;
-
-    const nexa = getNexaExecutable();
     const cwd = path.dirname(filePath);
-    const cmd = `${nexa} harness-check "${filePath}" --harness ${getHarnessMode()}`;
-    await runCommand(cmd, cwd);
+    await runNexa(['harness-check', filePath, '--harness', getHarnessMode()], cwd);
 }
 
-/**
- * Validate the current .nx file: `nexa validate <file>`
- */
 async function validateCommand() {
+    log('>>> nexa.validate command triggered');
     await saveActiveFile();
     const filePath = getActiveNexaFile();
     if (!filePath) return;
-
-    const nexa = getNexaExecutable();
     const cwd = path.dirname(filePath);
-    const cmd = `${nexa} validate "${filePath}"`;
-    await runCommand(cmd, cwd);
+    await runNexa(['validate', filePath], cwd);
 }
 
-/**
- * @param {vscode.ExtensionContext} context
- */
 function activate(context) {
+    log('[Nexa Extension] Activating...');
     context.subscriptions.push(
         vscode.commands.registerCommand('nexa.build', buildCommand),
         vscode.commands.registerCommand('nexa.run', runCommand),
         vscode.commands.registerCommand('nexa.harnessCheck', harnessCheckCommand),
         vscode.commands.registerCommand('nexa.validate', validateCommand),
     );
-    getOutputChannel().appendLine('[Nexa Extension] Activated. Commands: nexa.build, nexa.run, nexa.harnessCheck, nexa.validate');
+    log('[Nexa Extension] Activated. Commands registered: nexa.build, nexa.run, nexa.harnessCheck, nexa.validate');
 }
 
 function deactivate() {
