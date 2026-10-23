@@ -47,6 +47,25 @@ jobs:
           NEXA_CLI: ${{ github.workspace }}/.runtime/.venv/bin/nexa
       - run: pnpm run package
       - run: pnpm run verify:package
+      - name: Download the minimum VS Code host
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: |
+          node <<'NODE'
+          const { downloadAndUnzipVSCode } = require('@vscode/test-electron');
+          const { appendFileSync } = require('node:fs');
+          downloadAndUnzipVSCode('1.96.4').then(executable => {
+            appendFileSync(process.env.GITHUB_ENV, `VSCODE_EXECUTABLE_PATH=${executable}\n`);
+          }).catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
+      - name: Install the Linux sandbox helper
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: |
+          # VS Code tarballs need the helper installed to enable the setuid sandbox.
+          # https://code.visualstudio.com/docs/setup/portable#_linux
+          sandbox_helper="$(dirname "$VSCODE_EXECUTABLE_PATH")/chrome-sandbox"
+          sudo chown root:root "$sandbox_helper"
+          sudo chmod 4755 "$sandbox_helper"
+          test "$(stat -c '%u:%g:%a' "$sandbox_helper")" = '0:0:4755'
       - name: VS Code extension-host smoke
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         run: xvfb-run -a pnpm run test:host
