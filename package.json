@@ -1,41 +1,51 @@
 {
   "name": "nexa-lang",
   "displayName": "Nexa",
-  "description": "Nexa Language Support — syntax highlighting, build & run commands",
-  "version": "0.1.0",
+  "description": "Nexa 2.4 language tools: diagnostics, build/run tasks, inspection and symbols",
+  "version": "0.2.0",
   "publisher": "Nexa-Language",
   "icon": "icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Nexa-Language/Nexa"
+    "url": "https://github.com/Nexa-Language/Nexa-extension"
   },
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.96.0",
+    "node": ">=22"
   },
   "categories": [
     "Programming Languages",
-    "Snippets"
+    "Snippets",
+    "Linters"
   ],
   "activationEvents": [
     "onLanguage:nexa",
-    "onCommand:nexa.build",
-    "onCommand:nexa.run",
-    "onCommand:nexa.harnessCheck",
-    "onCommand:nexa.validate"
+    "onTaskType:nexa"
   ],
-  "main": "./extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "languages": [
       {
         "id": "nexa",
-        "aliases": ["Nexa", "nexa"],
-        "extensions": [".nx", ".nxlib"],
+        "aliases": [
+          "Nexa",
+          "nexa"
+        ],
+        "extensions": [
+          ".nx",
+          ".nxlib"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "nexa-secrets",
-        "aliases": ["Nexa Secrets", "nexa-secrets"],
-        "extensions": [".nxs"],
+        "aliases": [
+          "Nexa Secrets",
+          "nexa-secrets"
+        ],
+        "extensions": [
+          ".nxs"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -54,27 +64,44 @@
     "commands": [
       {
         "command": "nexa.build",
-        "title": "Nexa: Build",
+        "title": "Build",
         "icon": "$(build)",
-        "category": "Nexa"
+        "category": "Nexa",
+        "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "nexa.run",
-        "title": "Nexa: Run",
+        "title": "Run",
         "icon": "$(play)",
-        "category": "Nexa"
+        "category": "Nexa",
+        "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "nexa.harnessCheck",
-        "title": "Nexa: Harness Check",
+        "title": "Harness Check",
         "icon": "$(check)",
-        "category": "Nexa"
+        "category": "Nexa",
+        "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "nexa.validate",
-        "title": "Nexa: Validate",
+        "title": "Validate",
         "icon": "$(checklist)",
-        "category": "Nexa"
+        "category": "Nexa",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "nexa.inspect",
+        "title": "Inspect Structure",
+        "category": "Nexa",
+        "icon": "$(symbol-class)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "nexa.stop",
+        "title": "Stop Running Tasks",
+        "category": "Nexa",
+        "icon": "$(debug-stop)"
       }
     ],
     "menus": {
@@ -87,6 +114,16 @@
         {
           "command": "nexa.build",
           "group": "navigation",
+          "when": "resourceLangId == nexa"
+        },
+        {
+          "command": "nexa.stop",
+          "group": "navigation",
+          "when": "nexa.hasRunningTasks"
+        },
+        {
+          "command": "nexa.inspect",
+          "group": "navigation@3",
           "when": "resourceLangId == nexa"
         }
       ],
@@ -125,23 +162,154 @@
     "configuration": {
       "title": "Nexa",
       "properties": {
+        "nexa.executablePath": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "description": "CLI executable only, without arguments. Supports paths with spaces. Empty uses the legacy nexa.executable setting."
+        },
+        "nexa.executableArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "description": "Arguments before the Nexa subcommand. For uv: [\"run\", \"--project\", \"/path/to/Nexa\", \"nexa\"]. No shell expansion."
+        },
         "nexa.executable": {
           "type": "string",
           "default": "nexa",
-          "description": "Path to the nexa CLI executable. If 'nexa' is not in PATH, specify the full path (e.g. /usr/local/bin/nexa or python -m src.cli)."
+          "scope": "resource",
+          "description": "Legacy executable or quoted command. Prefer executablePath and executableArgs.",
+          "markdownDeprecationMessage": "Use `nexa.executablePath` and `nexa.executableArgs`. Existing common forms remain supported."
         },
         "nexa.harnessMode": {
           "type": "string",
-          "enum": ["off", "warn", "strict"],
+          "enum": [
+            "off",
+            "warn",
+            "strict"
+          ],
           "default": "warn",
-          "description": "Default Harness validation mode for build/run commands."
+          "scope": "resource",
+          "description": "Harness mode for build, run and diagnostics."
         },
         "nexa.proxyUrl": {
           "type": "string",
           "default": "",
-          "description": "HTTPS proxy URL for agents that need network access (e.g. http://127.0.0.1:7897). If empty, HTTP_PROXY/HTTPS_PROXY env vars are used."
+          "scope": "resource",
+          "description": "Optional HTTP/HTTPS proxy for explicit build and run tasks. Empty inherits the environment."
+        },
+        "nexa.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Check saved Nexa source files on open and save in trusted workspace folders."
+        },
+        "nexa.diagnostics.delayMs": {
+          "type": "number",
+          "default": 500,
+          "minimum": 0,
+          "maximum": 5000,
+          "scope": "resource",
+          "description": "Debounce time for automatic checks, in milliseconds."
+        },
+        "nexa.checkTimeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "maximum": 300000,
+          "scope": "resource",
+          "description": "Deadline for each validate, harness-check and inspect process."
+        },
+        "nexa.taskTimeoutMs": {
+          "type": "number",
+          "default": 300000,
+          "minimum": 1000,
+          "maximum": 86400000,
+          "scope": "resource",
+          "description": "Deadline for build and run tasks. Stop is always available."
+        },
+        "nexa.maxOutputBytes": {
+          "type": "number",
+          "default": 4194304,
+          "minimum": 1024,
+          "maximum": 67108864,
+          "scope": "resource",
+          "description": "Combined stdout/stderr limit per CLI process. Exceeding it stops the process."
         }
       }
+    },
+    "snippets": [
+      {
+        "language": "nexa",
+        "path": "./snippets/nexa.json"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "nexa",
+        "required": [
+          "command",
+          "file"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "enum": [
+              "build",
+              "run"
+            ],
+            "description": "Nexa action."
+          },
+          "file": {
+            "type": "string",
+            "description": "Source path, relative to this task’s workspace folder or absolute."
+          }
+        }
+      }
+    ]
+  },
+  "license": "MIT",
+  "packageManager": "pnpm@10.28.2",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Syntax highlighting and snippets work in Restricted Mode. CLI execution, diagnostics and inspection require Workspace Trust.",
+      "restrictedConfigurations": [
+        "nexa.executable",
+        "nexa.executablePath",
+        "nexa.executableArgs",
+        "nexa.proxyUrl"
+      ]
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Nexa requires saved files on the extension host filesystem."
     }
+  },
+  "scripts": {
+    "compile": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm compile && node --test test/*.test.cjs",
+    "test:host": "pnpm compile && node scripts/test-host.cjs",
+    "test:cli": "pnpm compile && node scripts/test-cli.cjs",
+    "vscode:prepublish": "tsc -p tsconfig.json",
+    "package": "vsce package --no-dependencies --out nexa-lang-0.2.0.vsix",
+    "check": "pnpm run typecheck && pnpm test",
+    "verify:package": "node scripts/verify-package.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.9",
+    "@types/vscode": "1.96.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.0.0",
+    "typescript": "5.7.3",
+    "vscode-textmate": "9.2.0",
+    "vscode-oniguruma": "2.0.1"
   }
 }

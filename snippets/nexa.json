@@ -1,0 +1,22 @@
+{
+  "Flow entry point": {
+    "prefix": "nx-flow",
+    "description": "A runnable Nexa flow with no model calls",
+    "body": ["flow ${1:main} {", "    print \"${2:Hello, Nexa!}\";", "}"]
+  },
+  "Agent definition": {
+    "prefix": "nx-agent",
+    "description": "An agent declaration; configure a provider before execution",
+    "body": ["agent ${1:Assistant} {", "    model: \"${2:provider/model}\",", "    prompt: \"${3:Answer clearly and use the available tools.}\"", "}"]
+  },
+  "Typed tool": {
+    "prefix": "nx-tool",
+    "description": "A typed tool function using the Nexa @tool annotation",
+    "body": ["@tool(\"${1:Echo a value}\")", "fn ${2:echo}(value: string): string {", "    return value;", "}"]
+  },
+  "Bounded flow": {
+    "prefix": "nx-harness-flow",
+    "description": "A flow with bounded steps and scoped context",
+    "body": ["flow ${1:main} {", "    autoloop max_steps: ${2:3}, timeout: ${3:30} {", "        with_context max_tokens: ${4:4000}, strategy: sliding_window {", "            print \"${5:Working}\";", "            break;", "        }", "    }", "}"]
+  }
+}

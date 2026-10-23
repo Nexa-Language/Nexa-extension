@@ -1,0 +1,52 @@
+name: Extension checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    env:
+      NEXA_RUNTIME_REF: c2162637236e4a73feea410c4183672411666521
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run check
+      - name: Check out the matching runtime
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        uses: actions/checkout@v7
+        with:
+          repository: Nexa-Language/Nexa
+          ref: ${{ env.NEXA_RUNTIME_REF }}
+          path: .runtime
+          persist-credentials: false
+      - name: Install the runtime toolchain
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.30"
+          python-version: "3.12"
+      - name: Verify real CLI contracts
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: |
+          uv sync --locked --project .runtime
+          pnpm run test:cli
+        env:
+          NEXA_CLI: ${{ github.workspace }}/.runtime/.venv/bin/nexa
+      - run: pnpm run package
+      - run: pnpm run verify:package
+      - name: VS Code extension-host smoke
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: xvfb-run -a pnpm run test:host
