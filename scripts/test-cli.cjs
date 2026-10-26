@@ -4,10 +4,11 @@ const path = require('node:path');
 const { tmpdir } = require('node:os');
 const { CliRunner } = require('../dist/cli');
 const { parseDiagnostics, parseInspection } = require('../dist/protocol');
+const {languageVersion,parseCheckReport}=require('../dist/openProtocol');
 
 async function main() {
   const executable=process.env.NEXA_CLI;
-  if(!executable) throw new Error('Set NEXA_CLI to the local Nexa 2.4 executable.');
+  if(!executable) throw new Error('Set NEXA_CLI to the Nexa 3.0.0 executable.');
   const directory=await fs.mkdtemp(path.join(tmpdir(),'nexa real cli '));
   const home=path.join(directory,'home');
   await fs.mkdir(home);
@@ -27,6 +28,12 @@ async function main() {
     const source=snippet.body.join('\n').replace(/\$\{\d+:([^}]+)\}/g,'$1');
     const file=path.join(directory,`${name}.nx`);
     await fs.writeFile(file,source+'\n');
+    if(languageVersion(source)==='3.0') {
+      const checked=await invoke('check',file,['--json']);
+      assert.equal(checked.code,0,checked.stdout);
+      assert.ok(parseCheckReport(JSON.parse(checked.stdout)).program);
+      console.log(`CLI PASS: 3.0 snippet ${name}`);continue;
+    }
     const validation=await invoke('validate',file,['--json']);
     assert.equal(validation.code,0,validation.stdout);
     assert.ok(!parseDiagnostics(validation.stdout,'validate',{file,folder:directory}).some(item=>item.severity==='error'));

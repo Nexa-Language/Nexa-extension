@@ -11,12 +11,13 @@ for(const name of files) {
   assert.ok(!/\.(nxs|map|log)$/.test(name),`unexpected packaged data: ${name}`);
 }
 const find=name=>files.find(file=>file.toLowerCase()===`extension/${name === 'LICENSE' ? 'LICENSE.txt' : name}`.toLowerCase());
-for(const file of ['package.json','README.md','LICENSE','CHANGELOG.md','icon.png','dist/extension.js','syntaxes/nexa.tmLanguage.json','syntaxes/secrets.tmLanguage.json','snippets/nexa.json']) {
+for(const file of ['package.json','README.md','LICENSE','CHANGELOG.md','icon.png','dist/extension.js','dist/author.js','dist/openEnvironment.js','dist/openWorkbench.js','bridge/query.py','schemas/3.0/author-protocol.schema.json','schemas/3.0/environment.schema.json','syntaxes/nexa.tmLanguage.json','syntaxes/secrets.tmLanguage.json','snippets/nexa.json']) {
   assert.ok(find(file),`missing ${file}`);
 }
 const packaged=JSON.parse(execFileSync('unzip',['-p',archive,find('package.json')],{encoding:'utf8'}));
 assert.equal(packaged.license,'MIT');
 assert.equal(packaged.main,'./dist/extension.js');
-assert.equal(files.filter(file=>/^extension\/dist\/.*\.js$/.test(file)).length,11);
+const modules=files.filter(file=>/^extension\/dist\/.*\.js$/.test(file)).length;
+assert.equal(files.filter(file=>/^extension\/schemas\/3.0\/.*\.json$/.test(file)).length,16);
 assert.match(execFileSync('unzip',['-p',archive,find('LICENSE')],{encoding:'utf8'}),/^MIT License/);
-console.log(`VSIX PASS: ${files.length} entries; 11 compiled modules; grammars, snippets, docs and MIT license; no sources, tests, credentials or development dependencies.`);
+console.log(`VSIX PASS: ${files.length} entries; ${modules} compiled modules; read-only Python bridge, 16 official schemas, grammars, snippets, docs and MIT license; no development sources, tests, credentials or dependencies.`);
