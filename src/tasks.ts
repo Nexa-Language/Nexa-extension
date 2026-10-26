@@ -4,6 +4,7 @@ import { CliRunner, describeResult, taskExitCode, type CliResult } from './cli';
 import { processEnvironment } from './config';
 import { isSourceFile, requireTrust } from './resources';
 import { errorText, savedDocument, settingsFor } from './workspace';
+import { languageVersion } from './openProtocol';
 
 export type TaskAction = 'build' | 'run';
 interface RunningTask { controller: AbortController; uri: vscode.Uri; action: TaskAction }
@@ -43,7 +44,8 @@ export class NexaTasks implements vscode.TaskProvider, vscode.Disposable {
   readonly onDidChange = this.changeEmitter.event;
   private disposed = false;
 
-  constructor(private readonly runner: CliRunner, private readonly output: vscode.OutputChannel) {}
+  constructor(private readonly runner: CliRunner, private readonly output: vscode.OutputChannel,
+    private readonly openExecute?: (action: TaskAction, document: vscode.TextDocument, signal: AbortSignal, write: (text: string) => void) => Promise<number>) {}
   get count(): number { return this.active.size; }
 
   async start(action: TaskAction, uri?: vscode.Uri): Promise<vscode.TaskExecution | undefined> {
@@ -76,8 +78,12 @@ export class NexaTasks implements vscode.TaskProvider, vscode.Disposable {
     this.active.set(key, { controller, uri, action });
     this.changeEmitter.fire();
     try {
-      await savedDocument(uri);
+      const document = await savedDocument(uri);
       if (signal.aborted || controller.signal.aborted) return 130;
+      if (languageVersion(document.getText()) === '3.0') {
+        if (!this.openExecute) throw new Error('Open Programs commands are unavailable.');
+        return await this.openExecute(action, document, controller.signal, write);
+      }
       const settings = settingsFor(uri);
       write(`Nexa ${action}: ${uri.fsPath}\nWorking directory: ${settings.cwd}\n\n`);
       const result = await this.runner.run({

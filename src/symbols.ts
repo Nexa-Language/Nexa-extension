@@ -5,10 +5,13 @@ import { processEnvironment } from './config';
 import { parseInspection, toUtf16Position, type Inspection } from './protocol';
 import { canCheckAutomatically } from './resources';
 import { errorText, resourceContext, settingsFor } from './workspace';
+import { languageVersion, openInspection } from './openProtocol';
+import type { OpenServices } from './openServices';
 
 const kinds: Record<string, vscode.SymbolKind> = {
   agents: vscode.SymbolKind.Class, tools: vscode.SymbolKind.Function, protocols: vscode.SymbolKind.Interface,
   flows: vscode.SymbolKind.Function, tests: vscode.SymbolKind.Method, types: vscode.SymbolKind.Struct,
+  goals: vscode.SymbolKind.Function, handlers: vscode.SymbolKind.Event,
 };
 
 export class NexaSymbols implements vscode.DocumentSymbolProvider, vscode.Disposable {
@@ -16,7 +19,7 @@ export class NexaSymbols implements vscode.DocumentSymbolProvider, vscode.Dispos
   private readonly cache = new Map<string, { version: number; inspection: Inspection }>();
   private disposed = false;
 
-  constructor(private readonly runner: CliRunner, private readonly output: vscode.OutputChannel) {}
+  constructor(private readonly runner: CliRunner, private readonly output: vscode.OutputChannel, private readonly open?: OpenServices) {}
 
   invalidate(document: vscode.TextDocument): void {
     const key = document.uri.toString();
@@ -42,6 +45,14 @@ export class NexaSymbols implements vscode.DocumentSymbolProvider, vscode.Dispos
       if (automatic && !(await canCheckAutomatically(context.file, context.folder, vscode.workspace.isTrusted))) return;
       if (!fresh()) return;
       if (cached?.version === version) return cached.inspection;
+      if (languageVersion(document.getText()) === '3.0') {
+        if (!this.open) throw new Error('Open Programs Author service is unavailable.');
+        const report = await this.open.check(document, controller.signal);
+        if (!fresh()) return;
+        const inspection = openInspection(report, context);
+        this.cache.set(key, { version, inspection });
+        return inspection;
+      }
       const settings = settingsFor(document.uri);
       const result = await this.runner.run({
         executable: settings.executable, args: [...settings.args, 'inspect', document.uri.fsPath, '--format', 'json'],

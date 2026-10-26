@@ -1,12 +1,13 @@
 import * as path from 'node:path';
 import type { ResourceContext } from './config';
 
-export type CheckKind = 'validate' | 'harness';
+export type CheckKind = 'validate' | 'harness' | 'check';
 export interface Position { line: number; character: number }
 export interface SourceSpan { file: string; start: Position; end: Position }
 export interface Problem {
   file: string;
   position?: Position;
+  end?: Position;
   message: string;
   severity: 'error' | 'warning' | 'info';
   code: string;

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 — Nexa 3.0 native authoring
+
+- Route checks and goal/handler Outline through native Author while preserving 2.4 tooling.
+- Add bounded JSON-RPC lifecycle, explicit read-only SDK bridge and per-root environment/budgets.
+- Add persistent activity/evidence view and exact patch review, approval, apply, cancellation, recovery and capsule commands.
+- Persist clarification synchronization across interruption/restart and enforce source/draft CAS.
+- Bind Author to an environment snapshot and recheck current permissions before every RPC dispatch.
+- Preserve native syntax/EOF point diagnostics and Unicode positions in Problems.
+- Package official 3.0 schemas/snippets and verify native CLI/SDK/Author, real OCI and installed VSIX on VS Code 1.96.4.
+
 ## 0.2.0 — Nexa 2.4 tooling upgrade
 
 - Migrate the extension to typed modules and a locked Node/pnpm toolchain.

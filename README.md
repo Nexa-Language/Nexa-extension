@@ -1,56 +1,102 @@
 # Nexa for Visual Studio Code
 
-**An agent-native language and runtime.** Edit Nexa 2.4 programs with source diagnostics, native build/run tasks, structured inspection and an Outline backed by compiler source positions.
+Extension **0.3.0** adds native Nexa 3.0 Open Programs authoring, persistent activities, evidence and exact patch review. Nexa 2.4 syntax, CLI settings, tasks and shortcuts remain available.
 
-[Language and runtime](https://github.com/Nexa-Language/Nexa) · [Documentation](https://github.com/Nexa-Language/Nexa-docs) · [Extension source](https://github.com/Nexa-Language/Nexa-extension)
+[Runtime](https://github.com/Nexa-Language/Nexa) · [Documentation](https://github.com/Nexa-Language/Nexa-docs) · [Extension source](https://github.com/Nexa-Language/Nexa-extension)
 
-## Start with Nexa 2.4
+## Start with Nexa 3.0
 
-Extension **0.2.0** targets the released [Nexa v2.4.0](https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0) CLI. Validation and CI use its source commit `c2162637236e4a73feea410c4183672411666521`. Install the runtime from that release source:
+Install [Nexa v3.0.0](https://github.com/Nexa-Language/Nexa/releases/tag/v3.0.0). CI and packaged schemas use release commit `274379606e53c90d2d25774f6bb8984c777d0759`. The Python runtime supports Linux/macOS. Candidate execution needs Docker Engine, Docker Desktop or Colima.
 
 ```sh
-git clone --branch v2.4.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
+git clone --branch v3.0.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
 cd Nexa
-uv sync --locked
-uv run nexa --version
+uv sync --locked --all-extras
+code --install-extension nexa-lang-0.3.0.vsix
 ```
 
-Select that environment in VS Code workspace settings:
+Configure each workspace folder explicitly:
 
 ```json
 {
-  "nexa.executablePath": "/absolute/path/to/Nexa/.venv/bin/nexa"
+  "nexa.executablePath": "/absolute/path/to/Nexa/.venv/bin/nexa",
+  "nexa.open.pythonPath": "/absolute/path/to/Nexa/.venv/bin/python",
+  "nexa.open.environment": "offline.environment.json",
+  "nexa.open.state": ".nexa/open-programs.sqlite3",
+  "nexa.open.programId": "demo",
+  "nexa.open.maxModelCalls": 4,
+  "nexa.open.maxTokens": 20000,
+  "nexa.open.timeoutSeconds": 120
 }
 ```
 
-On Windows, use the environment's `Scripts\\nexa.exe`. If the source checkout is managed through `uv`, keep the executable and arguments separate:
+The explicit Python setting runs the packaged read-only SDK bridge and must contain Nexa 3.0.0. The extension never infers or installs an interpreter. `nexa.open.pythonArgs` supplies launcher prefix arguments. Existing CLI options remain available, including executable `uv` with args `["run", "--project", "/path/to/Nexa", "nexa"]`. Arguments are passed without a shell; paths with spaces work as individual arguments.
+
+Create `offline.environment.json`:
 
 ```json
-{
-  "nexa.executablePath": "uv",
-  "nexa.executableArgs": ["run", "--project", "/absolute/path/to/Nexa", "nexa"]
-}
+{"image":"python@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704"}
 ```
 
-Paths containing spaces work without adding shell quotes inside `executablePath` or individual arguments. `${workspaceFolder}` and `${fileDirname}` are supported in these settings. `cwd` is the source file's own workspace folder, or its parent directory for an explicitly executed standalone file. Multi-root workspaces resolve settings per resource.
-
-Install the local extension package with VS Code **1.96 or later**:
-
-```sh
-code --install-extension nexa-lang-0.2.0.vsix
-```
-
-Open a trusted workspace and create `main.nx`:
+Create `answer.nx`:
 
 ```nexa
-flow main {
-    print "Hello, Nexa!";
+language "3.0"
+program Answer {
+    goal answer() -> Int {
+        intent "Return 42"
+        implementation value 42
+    }
 }
 ```
 
-Press **F5** to run. This example makes no model calls. Provider credentials and model configuration are managed by the Nexa runtime for programs that use agents.
+**Check Open Program** is local and sends only `program/check` to an Author process without a provider environment. Build explicitly invokes OCI. Run asks for an exact goal and an optional JSON input file. Open goals need a provider environment; credentials stay in the runtime process environment. Explicit resolution displays the configured call, token and time budgets.
 
-## Editor workflow
+## Open Programs workflow
+
+The Explorer's **Nexa Open Programs** view separates source goals/obligations, draft and active runtime revisions, Author activities, Runtime activities, clarification requests and evidence. Select a row to open its exact record in a native JSON editor. Refresh Status restores activities created by other clients and shows each activity's pinned revision.
+
+| Command ID | Action |
+| --- | --- |
+| `nexa.open.check` | Native contract check, Problems and goals |
+| `nexa.build` / `nexa.run` | Build / execute the selected source using workspace environment and budgets |
+| `nexa.open.buildLocked` | Verify source, environment, stored artifact and evidence without model requests |
+| `nexa.open.resolve` | Propose the source draft with CAS, select a goal and start an Author activity |
+| `nexa.open.revise` | Build and activate using the exact current draft revision |
+| `nexa.open.maintain` | Choose repository, included paths, change request and event; produce a proposal |
+| `nexa.open.status` / `nexa.open.cancel` | Restore state / select the exact Author or Runtime activity ID for durable cancellation |
+| `nexa.open.answer` / `nexa.open.syncSource` | Answer an exact clarification / review and synchronize its intent-only source edit |
+| `nexa.open.proposal` / `nexa.open.apply` | Review file diffs and evidence / explicitly authorize and apply the exact proposal |
+| `nexa.open.recover` / `nexa.open.resumeApply` | Inspect program recovery or patch journal / explicitly authorize resumed application |
+| `nexa.open.capsuleImport` / `nexa.open.capsuleExport` | Import a capsule / export a selected runtime activity with origin, creator and license |
+
+Answering first changes the database draft. The extension durably records pending synchronization before the answer request, reads the exact new IR and shows a source diff. Confirmation changes only the selected intent JSON token, using source/document checks. The native frontend validates the whole resulting program before synchronization with the exact expected revision. Edits, concurrent revisions, declined confirmation and restarts preserve the pending record and block build/run/resolve/revise. A current draft answered by another client also blocks replacement from an older source file; complete synchronization in that client first.
+
+Patch approval is separate from acceptance and from 2.4 tool approvals. The extension shows per-file baseline/proposed diffs and current evidence, requests human confirmation and an actor, issues a ten-minute grant, then passes that exact grant ID to native apply. The runtime rechecks scope, baseline, policy, evidence, task and expiry. Unsaved target documents block approval. Recovery preserves native journal and preserved-file information. Stopping a CLI task stops its process; use **Cancel Activity** to obtain a durable runtime cancellation result.
+
+The packaged SDK bridge exposes only initialize/snapshot/revision/proposal queries. It opens existing state with SQLite `mode=ro`, checks the 3.0 schema/application identity and uses native model/digest validation. SQLite may manage WAL reader sidecars; the bridge performs no business writes or migrations and reads active WAL state. Missing runtimes and incompatible databases are visible failures.
+
+## Open Programs settings
+
+All settings resolve in the source's owning workspace folder. Configuration changes replace Author/bridge connections. Explicit Author sessions bind a private snapshot of the configured environment (up to 2 MiB). Every queued RPC rechecks the original file's content before dispatch. External edits, replacements or deletion invalidate the old session; the next Resolve loads the current environment. Session shutdown removes its snapshot. Automatic Check uses no provider environment.
+
+Unknown language versions produce errors; files without a declaration retain 2.4 routing. A 3.0 declaration accepts leading whitespace and `//` comments, matching the released frontend. BOM/block-comment prefixes are rejected. Native syntax errors, including EOF errors, retain their original message and point location in Problems; Unicode columns are converted to VS Code's UTF16 coordinates.
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `nexa.open.environment` | Empty | Compiler environment JSON path for explicit execution |
+| `nexa.open.state` | `.nexa/open-programs.sqlite3` | Native state database |
+| `nexa.open.programId` | Source filename stem | Persistent program identity |
+| `nexa.open.pythonPath` / `pythonArgs` | Empty / `[]` | Explicit runtime interpreter/launcher for SDK queries |
+| `nexa.open.dockerContext` | Empty | Optional OCI context for build/run/Author candidate evaluation |
+| `nexa.open.capsule` | Empty | Exact imported capsule digest selected for run/maintenance |
+| `nexa.open.maxModelCalls` | `4` | Model call budget |
+| `nexa.open.maxTokens` | `20000` | Cumulative token budget |
+| `nexa.open.timeoutSeconds` | `120` | Resolution deadline in seconds |
+
+Use `nx-program` and `nx-open-goal` for 3.0 snippets. Official schemas are packaged for `*.environment.json`, `*.nx.lock`, `*.capsule.json`, `*.program.json` and `*.patch.json`.
+
+## 2.4 compatibility workflow
 
 | Command | Shortcut | Result |
 | --- | --- | --- |
@@ -120,13 +166,16 @@ pnpm run test:host
 NEXA_CLI=/absolute/path/to/Nexa/.venv/bin/nexa pnpm run test:cli
 pnpm run package
 pnpm run verify:package
+NEXA_CLI=/path/to/nexa NEXA_PYTHON=/path/to/python pnpm run test:open
+NEXA_CLI=/path/to/nexa NEXA_PYTHON=/path/to/python pnpm run test:oci
+NEXA_CLI=/path/to/nexa NEXA_PYTHON=/path/to/python pnpm run test:host:open
 ```
 
 `test:host` uses an installed macOS VS Code when available, accepts `VSCODE_EXECUTABLE_PATH`, or downloads the pinned VS Code 1.96.4 baseline. It uses temporary profiles and fake local CLI processes, testing trusted and restricted workspaces separately. The official test helper forces trust on, so the runner launches the test host directly to exercise the real trust service. Linux hosts need a graphical session, for example `xvfb-run -a pnpm run test:host`.
 
-Behavior tests cover process trees, output streaming, errors/signals, cancellation, bounds, paths with spaces, configuration migration, save failures, resource containment, stale diagnostics and TextMate tokenization. The real CLI suite validates all snippets and runs only a local hello flow. Test evidence is written under `.test-artifacts/` and stays out of the VSIX.
+Behavior tests cover process trees, output streaming, errors/signals, cancellation, bounds, paths with spaces, configuration migration, save failures, resource containment, stale diagnostics and TextMate tokenization. The real CLI suite validates 2.4/3.0 snippets and runs a 2.4 hello flow. The Open Programs suites use the released Author/SDK and deterministic provider fixtures. OCI checks exercise clarification, build/run, locked replay, exact proposal/grant/application, cancellation, recovery and capsules. Test evidence is written under `.test-artifacts/` and stays out of the VSIX.
 
-The VSIX allowlist includes compiled JavaScript, grammar, snippets, documentation, icon and the MIT license. Publishing requires a separately verified Marketplace publisher and a compatible published Nexa 2.4 runtime. No publish action is included in CI.
+The VSIX includes compiled JavaScript, the read-only Python bridge, all official 3.0 schemas, grammar, snippets, documentation, icon and MIT license. The installed-package host suite uses trusted/restricted profiles on VS Code 1.96.4. Marketplace publishing requires separate authorization and is excluded from CI.
 
 ## License
 

@@ -8,3 +8,6 @@
 !dist/*.js
 !syntaxes/*.json
 !snippets/*.json
+
+!bridge/query.py
+!schemas/3.0/*.json

@@ -2,21 +2,71 @@
   "Flow entry point": {
     "prefix": "nx-flow",
     "description": "A runnable Nexa flow with no model calls",
-    "body": ["flow ${1:main} {", "    print \"${2:Hello, Nexa!}\";", "}"]
+    "body": [
+      "flow ${1:main} {",
+      "    print \"${2:Hello, Nexa!}\";",
+      "}"
+    ]
   },
   "Agent definition": {
     "prefix": "nx-agent",
     "description": "An agent declaration; configure a provider before execution",
-    "body": ["agent ${1:Assistant} {", "    model: \"${2:provider/model}\",", "    prompt: \"${3:Answer clearly and use the available tools.}\"", "}"]
+    "body": [
+      "agent ${1:Assistant} {",
+      "    model: \"${2:provider/model}\",",
+      "    prompt: \"${3:Answer clearly and use the available tools.}\"",
+      "}"
+    ]
   },
   "Typed tool": {
     "prefix": "nx-tool",
     "description": "A typed tool function using the Nexa @tool annotation",
-    "body": ["@tool(\"${1:Echo a value}\")", "fn ${2:echo}(value: string): string {", "    return value;", "}"]
+    "body": [
+      "@tool(\"${1:Echo a value}\")",
+      "fn ${2:echo}(value: string): string {",
+      "    return value;",
+      "}"
+    ]
   },
   "Bounded flow": {
     "prefix": "nx-harness-flow",
     "description": "A flow with bounded steps and scoped context",
-    "body": ["flow ${1:main} {", "    autoloop max_steps: ${2:3}, timeout: ${3:30} {", "        with_context max_tokens: ${4:4000}, strategy: sliding_window {", "            print \"${5:Working}\";", "            break;", "        }", "    }", "}"]
+    "body": [
+      "flow ${1:main} {",
+      "    autoloop max_steps: ${2:3}, timeout: ${3:30} {",
+      "        with_context max_tokens: ${4:4000}, strategy: sliding_window {",
+      "            print \"${5:Working}\";",
+      "            break;",
+      "        }",
+      "    }",
+      "}"
+    ]
+  },
+  "Open Program": {
+    "prefix": "nx-program",
+    "description": "Nexa 3.0 explicit value goal; check is offline, build/run use OCI",
+    "body": [
+      "language \"3.0\"",
+      "program ${1:Answer} {",
+      "    goal ${2:answer}() -> Int {",
+      "        intent \"Return 42\"",
+      "        implementation value 42",
+      "    }",
+      "}"
+    ]
+  },
+  "Open runtime goal": {
+    "prefix": "nx-open-goal",
+    "description": "Nexa 3.0 open runtime goal; explicit resolution requires a provider",
+    "body": [
+      "language \"3.0\"",
+      "program ${1:Assistant} {",
+      "    goal ${2:answer}(question: String) -> String {",
+      "        stage runtime",
+      "        intent \"Answer the question\"",
+      "        implementation open",
+      "    }",
+      "}"
+    ]
   }
 }

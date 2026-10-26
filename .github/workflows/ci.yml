@@ -7,7 +7,7 @@ permissions:
 jobs:
   verify:
     env:
-      NEXA_RUNTIME_REF: c2162637236e4a73feea410c4183672411666521
+      NEXA_RUNTIME_REF: 274379606e53c90d2d25774f6bb8984c777d0759
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -43,8 +43,10 @@ jobs:
         run: |
           uv sync --locked --project .runtime
           pnpm run test:cli
+          pnpm run test:open
         env:
           NEXA_CLI: ${{ github.workspace }}/.runtime/.venv/bin/nexa
+          NEXA_PYTHON: ${{ github.workspace }}/.runtime/.venv/bin/python
       - run: pnpm run package
       - run: pnpm run verify:package
       - name: Download the minimum VS Code host
@@ -69,3 +71,50 @@ jobs:
       - name: VS Code extension-host smoke
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         run: xvfb-run -a pnpm run test:host
+  open-programs-oci:
+    runs-on: ubuntu-latest
+    env:
+      NEXA_RUNTIME_REF: 274379606e53c90d2d25774f6bb8984c777d0759
+      NEXA_CLI: ${{ github.workspace }}/.runtime/.venv/bin/nexa
+      NEXA_PYTHON: ${{ github.workspace }}/.runtime/.venv/bin/python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/checkout@v7
+        with:
+          repository: Nexa-Language/Nexa
+          ref: ${{ env.NEXA_RUNTIME_REF }}
+          path: .runtime
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.30"
+          python-version: "3.12"
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: uv sync --locked --all-extras --project .runtime
+      - name: Pull the pinned OCI execution image
+        run: docker pull python@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+      - run: pnpm run test:oci
+      - run: pnpm run package && pnpm run verify:package
+      - name: Download minimum supported host
+        run: |
+          node <<'NODE'
+          const { downloadAndUnzipVSCode } = require('@vscode/test-electron');
+          const { appendFileSync } = require('node:fs');
+          downloadAndUnzipVSCode('1.96.4').then(executable => {
+            appendFileSync(process.env.GITHUB_ENV, `VSCODE_EXECUTABLE_PATH=${executable}\n`);
+          }).catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
+      - name: Enable the packaged Linux sandbox helper
+        run: |
+          sandbox_helper="$(dirname "$VSCODE_EXECUTABLE_PATH")/chrome-sandbox"
+          sudo chown root:root "$sandbox_helper"
+          sudo chmod 4755 "$sandbox_helper"
+      - name: Verify installed VSIX with native runtime in Trusted and Restricted Mode
+        run: xvfb-run -a pnpm run test:host:open

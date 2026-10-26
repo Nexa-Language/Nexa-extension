@@ -33,6 +33,17 @@
     "declarations": {
       "patterns": [
         {
+          "match": "\\b(program|goal|on)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.open-program.nexa"
+            },
+            "2": {
+              "name": "entity.name.function.nexa"
+            }
+          }
+        },
+        {
           "match": "\\b(agent)\\s+([a-zA-Z_][a-zA-Z0-9_]*)(\\s*->\\s*([a-zA-Z_][a-zA-Z0-9_]*(?:<[a-zA-Z_][a-zA-Z0-9_]*>)?)?)?",
           "captures": {
             "1": {
@@ -131,6 +142,14 @@
     },
     "keywords": {
       "patterns": [
+        {
+          "name": "keyword.open-program.nexa",
+          "match": "\\b(language|environment|sandbox|acceptance|stage|capabilities|depends|ensure|review|implementation|value|resolve|propose|requires|human|approval|as)\\b"
+        },
+        {
+          "name": "keyword.type.nexa",
+          "match": "\\b(Int|Float|String|Bool|Json|Unit|Patch|Repository|ChangeRequest)\\b"
+        },
         {
           "name": "keyword.operator.return-type.nexa",
           "match": "->"
